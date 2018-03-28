@@ -1,0 +1,94 @@
+#####################------BASIC DOCKER COMMOANDS------#####################
+
+1.list containers - docker ps -a
+2.list images - docker images
+3.build a tagged docker image - ./mvnw install dockerfile:build
+4.run docker image - docker run -p 8080:8080 -t image_name
+5.Running your freshly minted Docker image with Spring profiles is as easy as passing an environment variable to the Docker run command. 
+	-  docker run -e "SPRING_PROFILES_ACTIVE=prod" -p 8080:8080 -t image_name
+6.stop container - docker stop container_name or id
+7.rename docker container - docker rename my_container my_new_container
+8.remove container -  docker rm container_name or id
+9.remove image -  docker rmi image_name or id
+
+
+
+#####################------DOCKER WITH SPRING BOOT------#####################
+
+1.create spring boot project
+2.add folowing to pom.xml
+
+*********--------pom.xml--------*********
+
+	<properties>
+		<dockerfile.maven.plugin.version>1.3.6</dockerfile.maven.plugin.version>
+		<docker.image.prefix>spring-boot-demo</docker.image.prefix>
+	</properties>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+			<!-- tag::plugin[] -->
+			<plugin>
+				<groupId>com.spotify</groupId>
+				<artifactId>dockerfile-maven-plugin</artifactId>
+				<version>${dockerfile.maven.plugin.version}</version>
+				<configuration>
+					<repository>${docker.image.prefix}/${project.artifactId}</repository>
+					<buildArgs>
+						<JAR_FILE>target/${project.build.finalName}.jar</JAR_FILE>
+					</buildArgs>
+				</configuration>
+			</plugin>
+			<!-- end::plugin[] -->
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>unpack</id>
+						<phase>package</phase>
+						<goals>
+							<goal>unpack</goal>
+						</goals>
+						<configuration>
+							<artifactItems>
+								<artifactItem>
+									<groupId>${project.groupId}</groupId>
+									<artifactId>${project.artifactId}</artifactId>
+									<version>${project.version}</version>
+								</artifactItem>
+							</artifactItems>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+
+*********----------------*********
+
+3.create DockerFile
+
+*********--------DockerFile--------*********
+
+FROM java:8
+VOLUME /tmp
+ARG JAR_FILE
+ADD ${JAR_FILE} app.jar
+ENTRYPOINT ["java","-Djava.security.egd=file:/dev/./urandom","-jar","/app.jar"]
+
+*********----------------*********
+
+4.build a tagged docker image - ./mvnw install dockerfile:build
+5.run docker image - docker run -p 8080:8080 -t image_name
+6.Running your freshly minted Docker image with Spring profiles is as easy as passing an environment variable to the Docker run command. 
+	-  docker run -e "SPRING_PROFILES_ACTIVE=prod" -p 8080:8080 -t image_name
+
+
+7.References 
+	https://spring.io/guides/gs/spring-boot-docker/
